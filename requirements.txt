@@ -1,8 +1,6 @@
 Flask
 flask-cors
-yt-dlp
-openai-whisper
+SpeechRecognition
 googletrans==4.0.0-rc1
-gTTS
-static-ffmpeg
+gTTS      
 gunicorn

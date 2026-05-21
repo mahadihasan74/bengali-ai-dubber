@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bangla AI Dubber — Luxury Minimal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background-color: #030712; /* আল্ট্রা ডার্ক ব্যাকগ্রাউন্ড */
+        }
+        .luxury-card {
+            background: linear-gradient(180deg, rgba(17, 24, 39, 0.7) 0%, rgba(17, 24, 39, 0.9) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .premium-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .premium-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+        }
+        /* সুইট অ্যালার্ট কাস্টম লাক্সারি থিম */
+        .swal2-popup {
+            background: #0b0f19 !important;
+            color: #f3f4f6 !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border-radius: 20px !important;
+            font-family: 'Hind Siliguri', sans-serif !important;
+        }
+    </style>
+    <script src="https://www.youtube.com/iframe_api"></script>
+</head>
+<body class="text-slate-200 min-h-screen flex flex-col items-center justify-between p-4 sm:p-8">
+
+    <div class="w-full max-w-4xl flex justify-between items-center py-4">
+        <div class="flex items-center gap-2">
+            <div class="h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_10px_#3b82f6]"></div>
+            <span class="text-xs font-bold tracking-widest text-slate-400 uppercase">BANGLA.AI</span>
+        </div>
+        <span class="text-xs text-slate-500">v1.0 (Beta)</span>
+    </div>
+
+    <div class="w-full max-w-3xl my-auto space-y-8">
+        
+        <div class="text-center space-y-3">
+            <h1 class="text-3xl sm:text-5xl font-bold text-white tracking-tight leading-tight">
+                ভিডিও কথা বলবে <span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">বাংলায়</span>
+            </h1>
+            <p class="text-slate-400 text-sm sm:text-base max-w-xl mx-auto font-light">
+                যেকোনো ইংরেজি বা হিন্দি এআই, এমএল কিংবা টেকনিক্যাল টিউটোরিয়াল ভিডিওর লিংক পেস্ট করুন। এআই স্বয়ংক্রিয়ভাবে ভিডিওর শব্দ বাংলায় ডাবিং করে দেবে।
+            </p>
+        </div>
+
+        <div class="luxury-card rounded-2xl p-4 sm:p-6 shadow-2xl space-y-4">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input type="text" id="ytUrl" 
+                       class="flex-1 premium-input rounded-xl px-5 py-4 text-white placeholder-slate-600 focus:outline-none text-sm sm:text-base"
+                       placeholder="ইউটিউব ভিডিও বা শর্টস লিংক এখানে দিন...">
+                <button onclick="startConversion()" 
+                        class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-8 py-4 rounded-xl text-sm sm:text-base transition-all duration-300 active:scale-95 shrink-0 shadow-lg shadow-blue-600/10">
+                    ডাবিং শুরু করুন
+                </button>
+            </div>
+
+            <div id="loading" class="hidden py-4 text-center">
+                <div class="inline-flex items-center gap-3 bg-blue-950/20 border border-blue-500/10 px-5 py-2.5 rounded-full">
+                    <svg class="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-blue-400 font-medium text-xs sm:text-sm">এআই রূপান্তর করছে... দয়া করে ১ মিনিট অপেক্ষা করুন</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="player-container" class="hidden w-full aspect-video rounded-2xl overflow-hidden shadow-2xl border border-slate-800 bg-black transition-all duration-700 opacity-0 transform translate-y-4">
+            <div id="ytPlayer" class="w-full h-full"></div>
+            <audio id="bgAudio" class="hidden"></audio>
+        </div>
+
+    </div>
+
+    <div class="w-full text-center text-slate-600 text-[11px] uppercase tracking-widest py-4">
+        OpenAI Whisper & Google TTS Integration
+    </div>
+
+    <script>
+        let player;
+        let audio = document.getElementById('bgAudio');
+        let currentVideoId = "";
+
+        const toast = Swal.mixin({
+            toast: true, position: 'top-end', showConfirmButton: false,
+            timer: 3000, timerProgressBar: true, background: '#0b0f19', color: '#fff'
+        });
+
+        function startConversion() {
+            const url = document.getElementById('ytUrl').value;
+            if(!url) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'লিংক ইনপুট করুন',
+                    text: 'অনুগ্রহ করে একটি সঠিক ইউটিউব বা শর্টস লিংক দিন।',
+                    confirmButtonColor: '#2563eb'
+                });
+                return;
+            }
+            
+            document.getElementById('loading').classList.remove('hidden');
+            const container = document.getElementById('player-container');
+            container.classList.add('hidden', 'opacity-0', 'translate-y-4');
+            
+            if(audio) audio.pause();
+
+            toast.fire({ icon: 'info', title: 'অনুবাদ রিকোয়েস্ট পাঠানো হয়েছে...' });
+
+            fetch('http://127.0.0.1:5000/convert', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ url: url })
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('hidden');
+                if(data.success) {
+                    currentVideoId = data.video_id;
+                    document.getElementById('bgAudio').src = data.audio_url;
+                    
+                    container.classList.remove('hidden');
+                    setTimeout(() => {
+                        container.classList.remove('opacity-0', 'translate-y-4');
+                    }, 50);
+
+                    if (player) {
+                        player.loadVideoById(currentVideoId);
+                    } else {
+                        initYouTubePlayer(currentVideoId);
+                    }
+
+                    toast.fire({ icon: 'success', title: 'ডাবিং সফল হয়েছে!' });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ব্যর্থ হয়েছে',
+                        text: 'সার্ভার এরর: ' + data.error,
+                        confirmButtonColor: '#2563eb'
+                    });
+                }
+            }).catch(err => {
+                document.getElementById('loading').classList.add('hidden');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'সার্ভার কানেক্ট করা যায়নি',
+                    text: 'আপনার ব্যাকএন্ড পাইথন সার্ভারটি কি চালু আছে?',
+                    confirmButtonColor: '#2563eb'
+                });
+            });
+        }
+
+        function initYouTubePlayer(videoId) {
+            player = new YT.Player('ytPlayer', {
+                height: '100%', width: '100%', videoId: videoId,
+                playerVars: { 'autoplay': 1, 'mute': 1, 'rel': 0 },
+                events: { 'onStateChange': onPlayerStateChange }
+            });
+        }
+
+        function onPlayerStateChange(event) {
+            let audioPlayer = document.getElementById('bgAudio');
+            if (event.data == YT.PlayerState.PLAYING) {
+                audioPlayer.currentTime = player.getCurrentTime();
+                audioPlayer.play();
+            } else if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.BUFFERING) {
+                audioPlayer.pause();
+            }
+        }
+    </script>
+</body>
+</html>

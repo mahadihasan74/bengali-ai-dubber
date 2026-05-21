@@ -21,7 +21,6 @@ from flask_cors import CORS
 static_ffmpeg.add_paths()
 
 app = Flask(__name__)
-# লাইভ সার্ভারের জন্য CORS পারফেক্টলি কনফিগার করা
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 AUDIO_FOLDER = "/tmp/generated_audios" if os.path.exists("/tmp") else "generated_audios"
@@ -35,20 +34,37 @@ def process_video_to_bangla(video_url, video_id):
         return f"{video_id}.mp3"
 
     temp_audio = os.path.join(AUDIO_FOLDER, f"temp_{video_id}")
+    
+    # ইউটিউব বট ব্লকিং বাইপাস করার জন্য অ্যাডভান্সড অপশন
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': f'{temp_audio}.%(ext)s',
+        'nocheckcertificate': True,
+        'ignoreerrors': True,
+        'quiet': True,
+        'no_warnings': True,
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Sec-Fetch-Mode': 'navigate'
+        },
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
             'preferredquality': '128',
         }],
     }
+    
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([video_url])
     
     temp_file = f"{temp_audio}.mp3"
     
+    # ফাইল ডাউনলোড নিশ্চিত করা
+    if not os.path.exists(temp_file):
+        raise Exception("ইউটিউব থেকে অডিও ফাইলটি ডাউনলোড করা যায়নি। অন্য একটি ভিডিও লিংক দিয়ে চেষ্টা করুন।")
+        
     model = whisper.load_model("base")
     result = model.transcribe(temp_file)
     original_text = result["text"]
@@ -89,7 +105,6 @@ def convert_video():
         
     try:
         audio_file_name = process_video_to_bangla(video_url, video_id)
-        # রেন্ডারের লাইভ লিঙ্ক ডাইনামিকালি জেনারেট করা
         host_url = request.host_url.rstrip('/')
         return jsonify({
             "success": True,

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bangla AI Dubber — Luxury Minimal</title>
+    <title>AI Audiobook & Note Maker — Luxury Minimal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -11,61 +11,64 @@
     <style>
         body {
             font-family: 'Hind Siliguri', sans-serif;
-            background-color: #030712; /* আল্ট্রা ডার্ক ব্যাকগ্রাউন্ড */
+            background-color: #030712;
         }
         .luxury-card {
             background: linear-gradient(180deg, rgba(17, 24, 39, 0.7) 0%, rgba(17, 24, 39, 0.9) 100%);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .premium-input {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        .file-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
         }
-        .premium-input:focus {
+        .file-zone:hover {
             border-color: #3b82f6;
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+            background: rgba(59, 130, 246, 0.02);
         }
-        /* সুইট অ্যালার্ট কাস্টম লাক্সারি থিম */
         .swal2-popup {
-            background: #0b0f19 !important;
-            color: #f3f4f6 !important;
+            background: #0b0f19 !important; color: #f3f4f6 !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            border-radius: 20px !important;
-            font-family: 'Hind Siliguri', sans-serif !important;
+            border-radius: 20px !important; font-family: 'Hind Siliguri', sans-serif !important;
         }
     </style>
-    <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body class="text-slate-200 min-h-screen flex flex-col items-center justify-between p-4 sm:p-8">
 
-    <div class="w-full max-w-4xl flex justify-between items-center py-4">
+    <div class="w-full max-w-5xl flex justify-between items-center py-4">
         <div class="flex items-center gap-2">
             <div class="h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_10px_#3b82f6]"></div>
-            <span class="text-xs font-bold tracking-widest text-slate-400 uppercase">BANGLA.AI</span>
+            <span class="text-xs font-bold tracking-widest text-slate-400 uppercase">AUDIOBOOK.AI</span>
         </div>
-        <span class="text-xs text-slate-500">v1.0 (Beta)</span>
+        <span class="text-xs text-slate-500">v2.0 (Premium)</span>
     </div>
 
-    <div class="w-full max-w-3xl my-auto space-y-8">
+    <div class="w-full max-w-4xl my-auto space-y-8 py-6">
         
         <div class="text-center space-y-3">
             <h1 class="text-3xl sm:text-5xl font-bold text-white tracking-tight leading-tight">
-                ভিডিও কথা বলবে <span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">বাংলায়</span>
+                অডিও লেকচার হবে <span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">বাংলা অডিওবুক</span>
             </h1>
             <p class="text-slate-400 text-sm sm:text-base max-w-xl mx-auto font-light">
-                যেকোনো ইংরেজি বা হিন্দি এআই, এমএল কিংবা টেকনিক্যাল টিউটোরিয়াল ভিডিওর লিংক পেস্ট করুন। এআই স্বয়ংক্রিয়ভাবে ভিডিওর শব্দ বাংলায় ডাবিং করে দেবে।
+                যেকোনো ইংরেজি অ디오 ফাইল (.mp3, .wav) আপলোড করুন। এআই ট্রান্সক্রাইব ও অনুবাদ করে আপনাকে দেবে বাংলা অডিওবুক এবং সম্পূর্ণ টেক্সট নোট।
             </p>
         </div>
 
-        <div class="luxury-card rounded-2xl p-4 sm:p-6 shadow-2xl space-y-4">
-            <div class="flex flex-col sm:flex-row gap-3">
-                <input type="text" id="ytUrl" 
-                       class="flex-1 premium-input rounded-xl px-5 py-4 text-white placeholder-slate-600 focus:outline-none text-sm sm:text-base"
-                       placeholder="ইউটিউব ভিডিও বা শর্টস লিংক এখানে দিন...">
-                <button onclick="startConversion()" 
-                        class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-8 py-4 rounded-xl text-sm sm:text-base transition-all duration-300 active:scale-95 shrink-0 shadow-lg shadow-blue-600/10">
-                    ডাবিং শুরু করুন
+        <div class="luxury-card rounded-2xl p-5 sm:p-8 shadow-2xl space-y-6">
+            <div class="file-zone rounded-xl p-8 text-center cursor-pointer relative" onclick="document.getElementById('audioFile').click()">
+                <input type="file" id="audioFile" class="hidden" accept=".mp3,.wav,.m4a,.ogg" onchange="updateFileName()">
+                <div class="space-y-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                    <div class="text-sm text-slate-300 font-medium" id="uploadText">আপনার অ디오 ফাইলটি এখানে সিলেক্ট করুন</div>
+                    <div class="text-xs text-slate-500">supports MP3, WAV, M4A up to 25MB</div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button onclick="startProcessing()" 
+                        class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-medium px-10 py-4 rounded-xl text-sm sm:text-base transition-all duration-300 active:scale-95 shadow-lg shadow-blue-600/10">
+                    এআই প্রসেসিং শুরু করুন
                 </button>
             </div>
 
@@ -75,112 +78,108 @@
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <span class="text-blue-400 font-medium text-xs sm:text-sm">এআই রূপান্তর করছে... দয়া করে ১ মিনিট অপেক্ষা করুন</span>
+                    <span class="text-blue-400 font-medium text-xs sm:text-sm">Whisper এআই অডিও শুনছে ও নোট তৈরি করছে... দয়া করে ১-২ মিনিট অপেক্ষা করুন</span>
                 </div>
             </div>
         </div>
 
-        <div id="player-container" class="hidden w-full aspect-video rounded-2xl overflow-hidden shadow-2xl border border-slate-800 bg-black transition-all duration-700 opacity-0 transform translate-y-4">
-            <div id="ytPlayer" class="w-full h-full"></div>
-            <audio id="bgAudio" class="hidden"></audio>
+        <div id="result-container" class="hidden space-y-6 transition-all duration-700 opacity-0 transform translate-y-4">
+            
+            <div class="luxury-card rounded-xl p-5 border border-blue-500/10">
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-blue-400 mb-3">🎧 জেনারেটেড বাংলা অডিওবুক</h3>
+                <audio id="audioPlayer" controls class="w-full accent-blue-500 bg-transparent"></audio>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="luxury-card rounded-xl p-5 space-y-2">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Original English Text</h4>
+                    <div id="origText" class="text-sm text-slate-400 max-h-60 overflow-y-auto leading-relaxed bg-black/20 p-3 rounded-lg border border-slate-800"></div>
+                </div>
+                <div class="luxury-card rounded-xl p-5 space-y-2">
+                    <h4 class="text-xs font-bold text-blue-400 uppercase tracking-widest">অনুবাদিত বাংলা নোট</h4>
+                    <div id="bnNote" class="text-sm text-slate-200 max-h-60 overflow-y-auto leading-relaxed bg-black/20 p-3 rounded-lg border border-slate-800"></div>
+                </div>
+            </div>
         </div>
 
     </div>
 
     <div class="w-full text-center text-slate-600 text-[11px] uppercase tracking-widest py-4">
-        OpenAI Whisper & Google TTS Integration
+        Powered by OpenAI Whisper & Google Neural Translation
     </div>
 
     <script>
-        let player;
-        let audio = document.getElementById('bgAudio');
-        let currentVideoId = "";
-
         const toast = Swal.mixin({
             toast: true, position: 'top-end', showConfirmButton: false,
             timer: 3000, timerProgressBar: true, background: '#0b0f19', color: '#fff'
         });
 
-        function startConversion() {
-            const url = document.getElementById('ytUrl').value;
-            if(!url) {
+        function updateFileName() {
+            const fileInput = document.getElementById('audioFile');
+            const uploadText = document.getElementById('uploadText');
+            if(fileInput.files.length > 0) {
+                uploadText.innerText = "সিলেক্টেড ফাইল: " + fileInput.files[0].name;
+                uploadText.classList.add("text-blue-400");
+            }
+        }
+
+        function startProcessing() {
+            const fileInput = document.getElementById('audioFile');
+            if(fileInput.files.length === 0) {
                 Swal.fire({
-                    icon: 'warning',
-                    title: 'লিংক ইনপুট করুন',
-                    text: 'অনুগ্রহ করে একটি সঠিক ইউটিউব বা শর্টস লিংক দিন।',
+                    icon: 'warning', title: 'ফাইল প্রয়োজন!',
+                    text: 'অনুগ্রহ করে প্রথমে একটি অডিও ফাইল (.mp3 বা .wav) আপলোড করুন।',
                     confirmButtonColor: '#2563eb'
                 });
                 return;
             }
-            
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
             document.getElementById('loading').classList.remove('hidden');
-            const container = document.getElementById('player-container');
-            container.classList.add('hidden', 'opacity-0', 'translate-y-4');
-            
-            if(audio) audio.pause();
+            const resultContainer = document.getElementById('result-container');
+            resultContainer.classList.add('hidden', 'opacity-0', 'translate-y-4');
 
-            toast.fire({ icon: 'info', title: 'অনুবাদ রিকোয়েস্ট পাঠানো হয়েছে...' });
+            toast.fire({ icon: 'info', title: 'সার্ভারে ফাইল প্রসেসিং শুরু হয়েছে...' });
 
-            // লোকালহোস্টের বদলে রেন্ডারের লাইভ লিঙ্কটি এখানে কানেক্ট করা হয়েছে
             fetch('https://bengali-ai-dubber.onrender.com/convert', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ url: url })
+                body: formData
             })
             .then(res => res.json())
             .then(data => {
                 document.getElementById('loading').classList.add('hidden');
                 if(data.success) {
-                    currentVideoId = data.video_id;
-                    document.getElementById('bgAudio').src = data.audio_url;
+                    document.getElementById('audioPlayer').src = data.audio_url;
+                    document.getElementById('origText').innerText = data.original_text;
+                    document.getElementById('bnNote').innerText = data.bangla_note;
                     
-                    container.classList.remove('hidden');
+                    resultContainer.classList.remove('hidden');
                     setTimeout(() => {
-                        container.classList.remove('opacity-0', 'translate-y-4');
+                        resultContainer.classList.remove('opacity-0', 'translate-y-4');
                     }, 50);
 
-                    if (player) {
-                        player.loadVideoById(currentVideoId);
-                    } else {
-                        initYouTubePlayer(currentVideoId);
-                    }
-
-                    toast.fire({ icon: 'success', title: 'ডাবিং সফল হয়েছে!' });
+                    Swal.fire({
+                        icon: 'success', title: 'অডিওবুক রেডি!',
+                        text: 'এআই সফলভাবে অডিওবুক এবং বাংলা নোট তৈরি করেছে।',
+                        timer: 2500, showConfirmButton: false
+                    });
                 } else {
                     Swal.fire({
-                        icon: 'error',
-                        title: 'ব্যর্থ হয়েছে',
-                        text: 'সার্ভার এরর: ' + data.error,
-                        confirmButtonColor: '#2563eb'
+                        icon: 'error', title: 'প্রসেসিং ব্যর্থ',
+                        text: 'সার্ভার এরর: ' + data.error, confirmButtonColor: '#2563eb'
                     });
                 }
-            }).catch(err => {
+            })
+            .catch(err => {
                 document.getElementById('loading').classList.add('hidden');
                 Swal.fire({
-                    icon: 'error',
-                    title: 'সার্ভার কানেক্ট করা যায়নি',
-                    text: 'ক্লাউড সার্ভারটি লোড হতে কিছুটা সময় নিচ্ছে, অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।',
+                    icon: 'error', title: 'কানেকশন এরর',
+                    text: 'সার্ভার কানেক্ট করা যায়নি বা ফাইলটি বড় হওয়ায় টাইমআউট হয়েছে।',
                     confirmButtonColor: '#2563eb'
                 });
             });
-        }
-
-        function initYouTubePlayer(videoId) {
-            player = new YT.Player('ytPlayer', {
-                height: '100%', width: '100%', videoId: videoId,
-                playerVars: { 'autoplay': 1, 'mute': 1, 'rel': 0 },
-                events: { 'onStateChange': onPlayerStateChange }
-            });
-        }
-
-        function onPlayerStateChange(event) {
-            let audioPlayer = document.getElementById('bgAudio');
-            if (event.data == YT.PlayerState.PLAYING) {
-                audioPlayer.currentTime = player.getCurrentTime();
-                audioPlayer.play();
-            } else if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.BUFFERING) {
-                audioPlayer.pause();
-            }
         }
     </script>
 </body>

@@ -10,117 +10,88 @@ cgi_module.parse_header = lambda content_type: (
 sys.modules['cgi'] = cgi_module
 
 import os
-import yt_dlp
 import whisper
 from googletrans import Translator
 from gtts import gTTS
-import static_ffmpeg
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-
-static_ffmpeg.add_paths()
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+# ফাইল আপলোড এবং সেভ করার ফোল্ডার সেটিংস
+UPLOAD_FOLDER = "/tmp/uploads" if os.path.exists("/tmp") else "uploads"
 AUDIO_FOLDER = "/tmp/generated_audios" if os.path.exists("/tmp") else "generated_audios"
-if not os.path.exists(AUDIO_FOLDER):
-    os.makedirs(AUDIO_FOLDER)
 
-def process_video_to_bangla(video_url, video_id):
-    output_mp3 = os.path.join(AUDIO_FOLDER, f"{video_id}.mp3")
-    
-    if os.path.exists(output_mp3):
-        return f"{video_id}.mp3"
+for folder in [UPLOAD_FOLDER, AUDIO_FOLDER]:
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
-    temp_audio = os.path.join(AUDIO_FOLDER, f"temp_{video_id}")
-    
-    # ইউটিউবের নতুন অ্যালগরিদম ও বট বাইপাস করার আল্ট্রা সেটিংস
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': f'{temp_audio}.%(ext)s',
-        'nocheckcertificate': True,
-        'ignoreerrors': False,
-        'quiet': True,
-        'no_warnings': True,
-        # ইউটিউবের অফিশিয়াল ক্লায়েন্ট ইমিউলেট করা
-        'youtube_include_dash_manifest': False,
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['android', 'web'],
-                'skip': ['dash', 'hls']
-            }
-        },
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '128',
-        }],
-    }
-    
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([video_url])
-    except Exception as e:
-        # যদি প্রথম পদ্ধতিতে ফেইল করে, তাহলে অল্টারনেটিভ ক্লায়েন্ট ট্রাই করবে
-        print(f"Retrying with fallback client due to: {e}")
-        ydl_opts['extractor_args']['youtube']['player_client'] = ['ios']
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([video_url])
-    
-    temp_file = f"{temp_audio}.mp3"
-    
-    if not os.path.exists(temp_file):
-        raise Exception("ইউটিউব সিকিউরিটির কারণে এই ভিডিওটি ডাউনলোড করা যায়নি। অনুগ্রহ করে অন্য ভিডিওর লিংক দিন।")
-        
-    model = whisper.load_model("base")
-    result = model.transcribe(temp_file)
-    original_text = result["text"]
-    
-    translator = Translator()
-    bangla_text = translator.translate(original_text, dest='bn').text
-    
-    tts = gTTS(text=bangla_text, lang='bn', slow=False)
-    tts.save(output_mp3)
-    
-    if os.path.exists(temp_file):
-        os.remove(temp_file)
-        
-    return f"{video_id}.mp3"
+ALLOWED_EXTENSIONS = {'mp3', 'wav', 'm4a', 'ogg'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def home():
-    return jsonify({"status": "Server is running perfectly!"})
+    return jsonify({"status": "AI Audiobook Server is running perfectly!"})
 
 @app.route('/convert', methods=['POST', 'OPTIONS'])
-def convert_video():
+def convert_audio():
     if request.method == 'OPTIONS':
         return jsonify({"success": True}), 200
         
-    data = request.json or {}
-    video_url = data.get('url', '')
-    
-    video_id = ""
-    if "youtu.be/" in video_url:
-        video_id = video_url.split("youtu.be/")[1].split("?")[0]
-    elif "v=" in video_url:
-        video_id = video_url.split("v=")[1].split("&")[0]
-    elif "shorts/" in video_url:
-        video_id = video_url.split("shorts/")[1].split("?")[0]
-
-    if not video_id:
-        return jsonify({"error": "ভুল ইউটিউব লিংক"}), 400
+    # রিকোয়েস্টে ফাইল আছে কিনা চেক করা
+    if 'file' not in request.files:
+        return jsonify({"error": "কোনো ফাইল পাওয়া যায়নি"}), 400
         
-    try:
-        audio_file_name = process_video_to_bangla(video_url, video_id)
-        host_url = request.host_url.rstrip('/')
-        return jsonify({
-            "success": True,
-            "video_id": video_id,
-            "audio_url": f"{host_url}/audio/{audio_file_name}"
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "সঠিক ফাইল সিলেক্ট করুন"}), 400
+        
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        base_name = os.path.splitext(filename)[0]
+        input_path = os.path.join(UPLOAD_FOLDER, filename)
+        output_mp3_name = f"bn_{base_name}.mp3"
+        output_path = os.path.join(AUDIO_FOLDER, output_mp3_name)
+        
+        # ফাইলটি সার্ভারে সেভ করা
+        file.save(input_path)
+        
+        try:
+            # ১. Whisper AI দিয়ে স্পিচ-টু-টেক্সট করা
+            model = whisper.load_model("base")
+            result = model.transcribe(input_path)
+            original_text = result["text"]
+            
+            # ২. Google দিয়ে বাংলায় অনুবাদ করা
+            translator = Translator()
+            bangla_text = translator.translate(original_text, dest='bn').text
+            
+            # ৩. gTTS দিয়ে নতুন বাংলা অডিওবুক তৈরি করা
+            tts = gTTS(text=bangla_text, lang='bn', slow=False)
+            tts.save(output_path)
+            
+            # কাজ শেষে আপলোড করা মূল ফাইলটি ডিলিট করে দেওয়া (সার্ভার ফাস্ট রাখতে)
+            if os.path.exists(input_path):
+                os.remove(input_path)
+                
+            host_url = request.host_url.rstrip('/')
+            return jsonify({
+                "success": True,
+                "original_text": original_text,
+                "bangla_note": bangla_text,
+                "audio_url": f"{host_url}/audio/{output_mp3_name}"
+            })
+            
+        except Exception as e:
+            if os.path.exists(input_path):
+                os.remove(input_path)
+            return jsonify({"error": str(e)}), 500
+            
+    return jsonify({"error": "অনুমোদিত ফাইল ফরম্যাট নয় (.mp3, .wav প্রয়োজন)"}), 400
 
 @app.route('/audio/<filename>')
 def serve_audio(filename):

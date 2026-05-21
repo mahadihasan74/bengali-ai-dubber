@@ -35,19 +35,21 @@ def process_video_to_bangla(video_url, video_id):
 
     temp_audio = os.path.join(AUDIO_FOLDER, f"temp_{video_id}")
     
-    # ইউটিউব বট ব্লকিং বাইপাস করার জন্য অ্যাডভান্সড অপশন
+    # ইউটিউবের নতুন অ্যালগরিদম ও বট বাইপাস করার আল্ট্রা সেটিংস
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': f'{temp_audio}.%(ext)s',
         'nocheckcertificate': True,
-        'ignoreerrors': True,
+        'ignoreerrors': False,
         'quiet': True,
         'no_warnings': True,
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Sec-Fetch-Mode': 'navigate'
+        # ইউটিউবের অফিশিয়াল ক্লায়েন্ট ইমিউলেট করা
+        'youtube_include_dash_manifest': False,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'],
+                'skip': ['dash', 'hls']
+            }
         },
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
@@ -56,14 +58,20 @@ def process_video_to_bangla(video_url, video_id):
         }],
     }
     
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([video_url])
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
+    except Exception as e:
+        # যদি প্রথম পদ্ধতিতে ফেইল করে, তাহলে অল্টারনেটিভ ক্লায়েন্ট ট্রাই করবে
+        print(f"Retrying with fallback client due to: {e}")
+        ydl_opts['extractor_args']['youtube']['player_client'] = ['ios']
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
     
     temp_file = f"{temp_audio}.mp3"
     
-    # ফাইল ডাউনলোড নিশ্চিত করা
     if not os.path.exists(temp_file):
-        raise Exception("ইউটিউব থেকে অডিও ফাইলটি ডাউনলোড করা যায়নি। অন্য একটি ভিডিও লিংক দিয়ে চেষ্টা করুন।")
+        raise Exception("ইউটিউব সিকিউরিটির কারণে এই ভিডিওটি ডাউনলোড করা যায়নি। অনুগ্রহ করে অন্য ভিডিওর লিংক দিন।")
         
     model = whisper.load_model("base")
     result = model.transcribe(temp_file)
